@@ -1,0 +1,9 @@
+fn main(): int{
+  a: int = add(7 ,0);
+  return a;
+}
+
+fn add(a: int, b: int): int {
+  c: int = a + b;
+  return c;
+}

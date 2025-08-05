@@ -1,0 +1,4 @@
+bin
+.git
+obj
+Makefile
