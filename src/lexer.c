@@ -15,6 +15,8 @@ char *token_name(TokenType type) {
     return "TOKEN_IDENTIFIER";
   case TOKEN_INT_LIT:
     return "TOKEN_LITERAL_INT";
+  case TOKEN_FLOAT_LIT:
+    return "TOKEN_FLOATING_INT";
   case TOKEN_KEYWORD_FN:
     return "TOKEN_KEYWORD_FN";
   case TOKEN_KEYWORD_INT:
@@ -96,87 +98,111 @@ Token *next_token(char *buffer) {
   if (buffer != NULL) {
     current_pos = buffer; // Initialize the buffer pointer on the first call
   }
-
   // Check for end of file
   if (*current_pos == '\0') {
     return create_token(TOKEN_EOF, "", 0);
   }
-
   // Skip any whitespace
   while (isspace(*current_pos)) {
     current_pos++;
   }
-  if (*current_pos == '\0') {
-    return create_token(TOKEN_EOF, "", 0);
-  }
-
   // Get the start of the token for later
+
   const char *token_start = current_pos;
+  lexerState state = STATE_START;
 
-  // Handle single-character tokens with a switch statement
-  switch (*current_pos) {
-  case '(':
-    current_pos++;
-    return create_token(TOKEN_PAREN_L, token_start, 1);
-  case ')':
-    current_pos++;
-    return create_token(TOKEN_PAREN_R, token_start, 1);
-  case '{':
-    current_pos++;
-    return create_token(TOKEN_BRACKET_L, token_start, 1);
-  case '}':
-    current_pos++;
-    return create_token(TOKEN_BRACKET_R, token_start, 1);
-  case ':':
-    current_pos++;
-    return create_token(TOKEN_COLON, token_start, 1);
-  case ';':
-    current_pos++;
-    return create_token(TOKEN_SEMICOLON, token_start, 1);
-  case ',':
-    current_pos++;
-    return create_token(TOKEN_COMA, token_start, 1);
-  case '=':
-    current_pos++;
-    return create_token(TOKEN_OPERATOR_ASSIGN, token_start, 1);
-  case '+':
-    current_pos++;
-    return create_token(TOKEN_OPERATOR_PLUS, token_start, 1);
-  case '-':
-    current_pos++;
-    return create_token(TOKEN_OPERATOR_MINUS, token_start, 1);
-  case '*':
-    current_pos++;
-    return create_token(TOKEN_OPERATOR_MULTIPLY, token_start, 1);
-  case '/':
-    current_pos++;
-    return create_token(TOKEN_OPERATOR_DIVIDE, token_start, 1);
+  while (*current_pos != '\0') {
+    char curr_char = *current_pos;
+
+    switch (state) {
+    case STATE_START:
+      if (isalpha(curr_char) || curr_char == '_') {
+        state = STATE_IDEN;
+        current_pos++;
+      } else if (isdigit(curr_char)) {
+        state = STATE_INT_LIT;
+        current_pos++;
+      } else {
+        current_pos++;
+        switch (curr_char) {
+        case '(':
+          return create_token(TOKEN_PAREN_L, token_start, 1);
+        case ')':
+          return create_token(TOKEN_PAREN_R, token_start, 1);
+        case '{':
+          return create_token(TOKEN_BRACKET_L, token_start, 1);
+        case '}':
+          return create_token(TOKEN_BRACKET_R, token_start, 1);
+        case ':':
+          return create_token(TOKEN_COLON, token_start, 1);
+        case ';':
+          return create_token(TOKEN_SEMICOLON, token_start, 1);
+        case ',':
+          return create_token(TOKEN_COMA, token_start, 1);
+        case '=':
+          return create_token(TOKEN_OPERATOR_ASSIGN, token_start, 1);
+        case '+':
+          return create_token(TOKEN_OPERATOR_PLUS, token_start, 1);
+        case '-':
+          return create_token(TOKEN_OPERATOR_MINUS, token_start, 1);
+        case '*':
+          return create_token(TOKEN_OPERATOR_MULTIPLY, token_start, 1);
+        case '/':
+          return create_token(TOKEN_OPERATOR_DIVIDE, token_start, 1);
+        default:
+          fprintf(stderr, "Lexer: Unrecognized character '%c'\n", curr_char);
+          return create_token(TOKEN_UNKNOWN, token_start, 1);
+        }
+      }
+      break;
+
+    case STATE_IDEN:
+      if (isalnum(curr_char) || curr_char == '_') {
+        current_pos++;
+      } else {
+        size_t len = current_pos - token_start;
+        char *identifier_str = strndup(token_start, len);
+        TokenType type = check_keyword(identifier_str);
+        free(identifier_str);
+        return create_token(type, token_start, len);
+      }
+      break;
+
+    case STATE_INT_LIT:
+      if (isdigit(curr_char)) {
+        current_pos++;
+      } else if (curr_char == '.') {
+        state = STATE_FLOAT_LIT;
+        current_pos++;
+      } else {
+        size_t len = current_pos - token_start;
+        return create_token(TOKEN_INT_LIT, token_start, len);
+      }
+      break;
+    case STATE_FLOAT_LIT:
+      if (isdigit(curr_char)) {
+        current_pos++;
+      } else {
+        size_t len = current_pos - token_start;
+        return create_token(TOKEN_FLOAT_LIT, token_start, len);
+      }
+      break;
+    default:
+      fprintf(stderr, "Lexer: Invalid state\n");
+      exit(EXIT_FAILURE);
+    }
   }
 
-  // Handle identifiers and keywords
-  if (isalpha(*current_pos) || *current_pos == '_') {
-    while (isalnum(*current_pos) || *current_pos == '_') {
-      current_pos++;
-    }
-    size_t length = current_pos - token_start;
-    char *identifier_str = strndup(token_start, length);
+  if (state == STATE_IDEN) {
+    size_t len = current_pos - token_start;
+    char *identifier_str = strndup(token_start, len);
     TokenType type = check_keyword(identifier_str);
-    Token *token = create_token(type, token_start, length);
-    free(identifier_str); // Free the temporary string
-    return token;
+    free(identifier_str);
+    return create_token(type, token_start, len);
+  } else if (state == STATE_INT_LIT) {
+    size_t len = current_pos - token_start;
+    return create_token(TOKEN_INT_LIT, token_start, len);
   }
 
-  // Handle integer literals
-  if (isdigit(*current_pos)) {
-    while (isdigit(*current_pos)) {
-      current_pos++;
-    }
-    size_t length = current_pos - token_start;
-    return create_token(TOKEN_INT_LIT, token_start, length);
-  }
-
-  // Unrecognized character
-  fprintf(stderr, "Lexer: Unrecognized character '%c'\n", *current_pos);
-  current_pos++;
-  return next_token(NULL); // Continue to the next character
+  return create_token(TOKEN_EOF, "", 0);
 }

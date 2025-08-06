@@ -1,5 +1,5 @@
 fn main(): int{
-  a: int = add(7 ,0);
+  a: int = add(70.8 , 50);
   return a;
 }
 

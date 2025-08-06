@@ -4,10 +4,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef enum{
+  STATE_START,
+
+  STATE_INT_LIT,
+  STATE_FLOAT_LIT,
+  STATE_KEYWORD,
+
+  STATE_IDEN,
+  STATE_OPERATOR,
+
+  STATE_PUNC,
+
+  STATE_EOF,
+  STATE_ERROR
+}lexerState;
+
 typedef enum {
   TOKEN_EOF,        // EOF (end of the file)
   TOKEN_IDENTIFIER, // (main, a, b , c bassically names)
   TOKEN_INT_LIT,     // (1 ,11 ,4 bassically numbers)
+  TOKEN_FLOAT_LIT,
+  TOKEN_UNKNOWN,
 
   TOKEN_KEYWORD_FN,     // fn
   TOKEN_KEYWORD_INT,    // int
