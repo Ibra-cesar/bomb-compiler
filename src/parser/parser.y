@@ -84,7 +84,7 @@ FunctionDecl:
     /* Example syntax: fn main(a: int, b: float): int { ... } */
     TOKEN_KEYWORD_FN Identifier TOKEN_PAREN_L ParamListOpt TOKEN_PAREN_R TOKEN_COLON Type Block
     {
-        // $2 is the Identifier AST node, so we get its name
+        // $2 is the Identifier AST node
         $$ = ast_function_decl($2->data.identifier.name, $4, $7, $8);
         free($2); // Free the temporary identifier node
     }
@@ -247,7 +247,7 @@ ArgList:
 Token *current_token = NULL;
 char *input_buffer = NULL;
 
-/* yylex function - interface between Yacc and your lexer */
+/* yylex function */
 int yylex(void) {
     if (current_token) {
         free_token(current_token);
