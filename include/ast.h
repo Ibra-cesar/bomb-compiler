@@ -1,4 +1,3 @@
-/* ast.h - Abstract Syntax Tree definitions */
 #ifndef AST_H
 #define AST_H
 
@@ -48,24 +47,24 @@ typedef struct {
 
 /* Binary operators */
 typedef enum {
-  BINOP_ADD, /* + */
-  BINOP_SUB, /* - */
-  BINOP_MUL, /* * */
-  BINOP_DIV, /* / */
-  BINOP_MOD, /* % (if you add it later) */
-  BINOP_EQ,  /* == (if you add it later) */
-  BINOP_NE,  /* != (if you add it later) */
-  BINOP_LT,  /* < (if you add it later) */
-  BINOP_GT,  /* > (if you add it later) */
-  BINOP_LE,  /* <= (if you add it later) */
-  BINOP_GE   /* >= (if you add it later) */
+  BINOP_ADD, 
+  BINOP_SUB, 
+  BINOP_MUL, 
+  BINOP_DIV, 
+  BINOP_MOD, 
+  BINOP_EQ,  
+  BINOP_NE,  
+  BINOP_LT,  
+  BINOP_GT,  
+  BINOP_LE,  
+  BINOP_GE   
 } BinaryOperator;
 
 /* Unary operators */
 typedef enum {
-  UNOP_MINUS, /* - */
-  UNOP_PLUS,  /* + */
-  UNOP_NOT    /* ! (if you add it later) */
+  UNOP_MINUS, 
+  UNOP_PLUS,  
+  UNOP_NOT    
 } UnaryOperator;
 
 /* Generic list structure for AST nodes */
