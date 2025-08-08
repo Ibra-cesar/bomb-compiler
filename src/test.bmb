@@ -3,7 +3,7 @@ fn main(): int{
   return a;
 }
 
-fn add(a: int, b: int): int {
+fn add(a: float, b: int): float {
   c: int = a + b;
   return c;
 }

@@ -6,6 +6,7 @@
 
 // poss
 static const char *current_pos = NULL;
+YYSTYPE yylval;
 
 char *token_name(TokenType type) {
   switch (type) {
@@ -16,11 +17,13 @@ char *token_name(TokenType type) {
   case TOKEN_INT_LIT:
     return "TOKEN_LITERAL_INT";
   case TOKEN_FLOAT_LIT:
-    return "TOKEN_FLOATING_INT";
+    return "TOKEN_LITERAL_FLOAT";
   case TOKEN_KEYWORD_FN:
     return "TOKEN_KEYWORD_FN";
   case TOKEN_KEYWORD_INT:
     return "TOKEN_KEYWORD_INT";
+  case TOKEN_KEYWORD_FLOAT:
+    return "TOKEN_KEYWORD_FLOAT";
   case TOKEN_KEYWORD_RETURN:
     return "TOKEN_KEYWORD_RETURN";
   case TOKEN_OPERATOR_PLUS:
@@ -72,6 +75,8 @@ static Token *create_token(TokenType type, const char *val_start,
   strncpy(token->value, val_start, token_len);
   token->value[token_len] = '\0';
 
+  yylval = strdup(token->value);
+
   return token;
 }
 
@@ -87,6 +92,8 @@ static TokenType check_keyword(const char *identifier) {
     return TOKEN_KEYWORD_FN;
   if (strcmp(identifier, "int") == 0)
     return TOKEN_KEYWORD_INT;
+  if(strcmp(identifier, "float") == 0)
+    return TOKEN_KEYWORD_FLOAT;
   if (strcmp(identifier, "return") == 0)
     return TOKEN_KEYWORD_RETURN;
   if (strcmp(identifier, "main") == 0)
@@ -202,6 +209,9 @@ Token *next_token(char *buffer) {
   } else if (state == STATE_INT_LIT) {
     size_t len = current_pos - token_start;
     return create_token(TOKEN_INT_LIT, token_start, len);
+  }else if(state == STATE_FLOAT_LIT){
+    size_t len = current_pos - token_start;
+    return  create_token(TOKEN_FLOAT_LIT, token_start, len);
   }
 
   return create_token(TOKEN_EOF, "", 0);

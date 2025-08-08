@@ -1,0 +1,25 @@
+Program        = { FunctionDecl } EOF ;
+
+FunctionDecl   = "fn" IDENTIFIER "(" [ ParamList ] ")" ":" Type Block ;
+
+ParamList      = Param { "," Param } ;
+Param          = IDENTIFIER ":" Type ;
+
+Type           = "int" | "float" | IDENTIFIER ;
+
+Block          = "{" { Statement } "}" ;
+
+Statement      = VarDecl | Assignment | ReturnStmt | ExpressionStmt ;
+
+VarDecl        = IDENTIFIER ":" Type "=" Expression ";" ;
+Assignment     = IDENTIFIER "=" Expression ";" ;
+ReturnStmt     = "return" Expression ";" ;
+ExpressionStmt = Expression ";" ;
+
+Expression     = Addition ;
+Addition       = Term { ("+" | "-") Term } ;
+Term           = Factor { ("*" | "/") Factor } ;
+Factor         = NUMBER | FLOAT | IDENTIFIER | FunctionCall | "(" Expression ")" ;
+
+FunctionCall   = IDENTIFIER "(" [ ArgList ] ")" ;
+ArgList        = Expression { "," Expression } ;

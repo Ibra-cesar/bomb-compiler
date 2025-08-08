@@ -9,7 +9,6 @@ typedef enum{
 
   STATE_INT_LIT,
   STATE_FLOAT_LIT,
-  STATE_KEYWORD,
 
   STATE_IDEN,
   STATE_OPERATOR,
@@ -29,6 +28,7 @@ typedef enum {
 
   TOKEN_KEYWORD_FN,     // fn
   TOKEN_KEYWORD_INT,    // int
+  TOKEN_KEYWORD_FLOAT,   // float
   TOKEN_KEYWORD_RETURN, // return
 
   TOKEN_OPERATOR_PLUS,     // +
@@ -56,4 +56,11 @@ void free_token(Token *token);
 
 char *token_name(TokenType type);
 
+#ifndef YYSTYPE
+#define YYSTYPE char*
+extern YYSTYPE yylval;
+#endif
+
+
 #endif // !LEXER_H
+
