@@ -1,3 +1,4 @@
+/* ast.h - Abstract Syntax Tree definitions */
 #ifndef AST_H
 #define AST_H
 
@@ -62,9 +63,9 @@ typedef enum {
 
 /* Unary operators */
 typedef enum {
-  UNOP_MINUS, 
-  UNOP_PLUS,  
-  UNOP_NOT    
+  UNOP_MINUS, /* - */
+  UNOP_PLUS,  /* + */
+  UNOP_NOT    /* ! (if you add it later) */
 } UnaryOperator;
 
 /* Generic list structure for AST nodes */
@@ -76,8 +77,8 @@ struct ASTList {
 /* Main AST node structure */
 struct AST {
   ASTNodeType type;
-  int line;   /* Line number for error reporting */
-  int column; /* Column number for error reporting */
+  int line;   
+  int column; 
 
   union {
     /* Program node */
@@ -154,14 +155,12 @@ struct AST {
     /* Integer literal */
     struct {
       long long value;
-      char *raw_value; /* Original string representation */
-    } int_literal;
+      char *raw_value;     } int_literal;
 
     /* Float literal */
     struct {
       double value;
-      char *raw_value; /* Original string representation */
-    } float_literal;
+      char *raw_value;     } float_literal;
   } data;
 };
 
