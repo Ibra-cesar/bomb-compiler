@@ -1,9 +1,5 @@
-fn main(): int{
-  a: int = add(70.8 , 50);
-  return a;
-}
-
-fn add(a: float, b: int): float {
-  c: int = a + b;
-  return c;
+fn main(): int {
+    a: int = 20;
+    b: int = a + 5;
+    return b;
 }

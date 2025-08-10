@@ -1,18 +1,20 @@
 %{
-#include "ast.h"
-#include "lexer.h" 
+#include "../../include/ast.h"
+#include "../../include/lexer.h" 
 #include <stdio.h>
 #include <stdlib.h>
 
 /* External var & func*/
 extern int yylex(void);
+extern int yyparse(void);
 extern char* yytext;
 extern int yylineno;
+extern char *inp_buff;
 
 void yyerror(const char *s);
 
 /*AST root*/
-AST *root = NULL;
+AST *root;
 %}
 
 /* 
@@ -20,9 +22,9 @@ AST *root = NULL;
 */
 %union {
     char* str;
-    AST* ast_node;
-    ASTList* ast_list;
-    TypeInfo* type_info;
+    AST *ast_node;
+    ASTList *ast_list;
+    TypeInfo *type_info;
     BinaryOperator  bin_op;
     UnaryOperator   un_op;
 }
@@ -86,7 +88,7 @@ FunctionDecl:
     {
         // $2 is the Identifier AST node
         $$ = ast_function_decl($2->data.identifier.name, $4, $7, $8);
-        free($2); // Free the temporary identifier node
+        ast_free($2); // Free the temporary identifier node
     }
     ;
 
@@ -110,7 +112,7 @@ Param:
     Identifier TOKEN_COLON Type 
     { 
         $$ = ast_param($1->data.identifier.name, $3);
-        free($1); // Free the temporary identifier node
+        ast_free($1); // Free the temporary identifier node
     }
     ;
 
@@ -147,13 +149,13 @@ VarDecl:
     Identifier TOKEN_COLON Type TOKEN_OPERATOR_ASSIGN Expression TOKEN_SEMICOLON
     { 
         $$ = ast_var_decl($1->data.identifier.name, $3, $5); 
-        free($1);
+        ast_free($1);
     }
     /* Declaration without initialization: y: float; */
     | Identifier TOKEN_COLON Type TOKEN_SEMICOLON
     { 
         $$ = ast_var_decl($1->data.identifier.name, $3, NULL); 
-        free($1);
+        ast_free($1);
     }
     ;
 
@@ -162,7 +164,7 @@ Assignment:
     Identifier TOKEN_OPERATOR_ASSIGN Expression TOKEN_SEMICOLON
     { 
         $$ = ast_assignment($1->data.identifier.name, $3);
-        free($1);
+        ast_free($1);
     }
     ;
 
@@ -227,7 +229,7 @@ FunctionCall:
     Identifier TOKEN_PAREN_L ArgListOpt TOKEN_PAREN_R
     {
         $$ = ast_function_call($1->data.identifier.name, $3);
-        free($1);
+        ast_free($1);
     }
     ;
 
@@ -244,67 +246,9 @@ ArgList:
 %%
 
 /* Global variables for lexer integration */
-Token *current_token = NULL;
-char *input_buffer = NULL;
-
-/* yylex function */
-int yylex(void) {
-    if (current_token) {
-        free_token(current_token);
-    }
-    
-    current_token = next_token(input_buffer);
-    input_buffer = NULL;  // Only pass buffer on first call
-    
-    if (current_token == NULL) {
-        return 0;  // EOF
-    }
-    
-    
-    return current_token->type;
-}
 
 /* Error handling function */
 void yyerror(const char *s) {
     fprintf(stderr, "Parse error: %s\n", s);
-    if (current_token) {
-        fprintf(stderr, "Near token: %s (value: '%s')\n", 
-                token_name(current_token->type), current_token->value);
-    }
 }
 
-/* Main parsing function */
-int parse_file(const char *filename) {
-    FILE *file = fopen(filename, "rb");
-    if (!file) {
-        fprintf(stderr, "Error: Cannot open file '%s'\n", filename);
-        return 1;
-    }
-    
-    // Read file into buffer
-    fseek(file, 0, SEEK_END);
-    long file_size = ftell(file);
-    rewind(file);
-    
-    input_buffer = (char*)malloc(file_size + 1);
-    if (!input_buffer) {
-        fprintf(stderr, "Error: Cannot allocate memory\n");
-        fclose(file);
-        return 1;
-    }
-    
-    size_t bytes_read = fread(input_buffer, 1, file_size, file);
-    input_buffer[bytes_read] = '\0';  // Null terminate
-    fclose(file);
-    
-    // Parse the input
-    int result = yyparse();
-    
-    // Cleanup
-    free(input_buffer);
-    if (current_token) {
-        free_token(current_token);
-    }
-    
-    return result;
-}

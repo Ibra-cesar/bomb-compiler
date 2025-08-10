@@ -1,4 +1,6 @@
 #include "../include/lexer.h"
+#include "../include/ast.h"
+#include "parser/parser.bison.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,9 +8,14 @@
 
 // poss
 static const char *current_pos = NULL;
-YYSTYPE yylval;
+extern char *input_buff;
+extern int yylex(void);
 
-char *token_name(TokenType type) {
+void lexer_reset(void){
+  current_pos = input_buff;
+}
+
+char *token_name(int type) {
   switch (type) {
   case TOKEN_EOF:
     return "TOKEN_EOF";
@@ -48,15 +55,14 @@ char *token_name(TokenType type) {
     return "TOKEN_COLON";
   case TOKEN_SEMICOLON:
     return "TOKEN_SEMICOLON";
-  case TOKEN_COMA:
+  case TOKEN_COMMA:
     return "TOKEN_COMA";
   default:
     return "UNKNOWN_TOKEN";
   }
 }
 
-static Token *create_token(TokenType type, const char *val_start,
-                           size_t token_len) {
+static Token *create_token(int type, const char *val_start, size_t token_len) {
   Token *token = (Token *)malloc(sizeof(Token));
   if (token == NULL) {
     fprintf(stderr, "Lexer: Failed to allocate memory");
@@ -75,8 +81,6 @@ static Token *create_token(TokenType type, const char *val_start,
   strncpy(token->value, val_start, token_len);
   token->value[token_len] = '\0';
 
-  yylval = strdup(token->value);
-
   return token;
 }
 
@@ -87,12 +91,12 @@ void free_token(Token *token) {
   }
 }
 
-static TokenType check_keyword(const char *identifier) {
+static int check_keyword(const char *identifier) {
   if (strcmp(identifier, "fn") == 0)
     return TOKEN_KEYWORD_FN;
   if (strcmp(identifier, "int") == 0)
     return TOKEN_KEYWORD_INT;
-  if(strcmp(identifier, "float") == 0)
+  if (strcmp(identifier, "float") == 0)
     return TOKEN_KEYWORD_FLOAT;
   if (strcmp(identifier, "return") == 0)
     return TOKEN_KEYWORD_RETURN;
@@ -101,6 +105,146 @@ static TokenType check_keyword(const char *identifier) {
   return TOKEN_IDENTIFIER;
 }
 
+int yylex(void) {
+  if (current_pos == NULL) {
+    current_pos = input_buff;
+  }
+  // Check for end of file
+  if (*current_pos == '\0') {
+    return TOKEN_EOF;
+  }
+
+  // Skip any whitespace
+  while (isspace(*current_pos)) {
+    current_pos++;
+  }
+  // Get the start of the token for later
+
+  const char *token_start = current_pos;
+  lexerState state = STATE_START;
+
+  while (*current_pos != '\0') {
+    char curr_char = *current_pos;
+
+    switch (state) {
+    case STATE_START:
+      if (isalpha(curr_char) || curr_char == '_') {
+        state = STATE_IDEN;
+        current_pos++;
+      } else if (isdigit(curr_char)) {
+        state = STATE_INT_LIT;
+        current_pos++;
+      } else {
+        current_pos++;
+        switch (curr_char) {
+        case '(':
+          return TOKEN_PAREN_L;
+        case ')':
+          return TOKEN_PAREN_R;
+        case '{':
+          return TOKEN_BRACKET_L;
+        case '}':
+          return TOKEN_BRACKET_R;
+        case ':':
+          return TOKEN_COLON;
+        case ';':
+          return TOKEN_SEMICOLON;
+        case ',':
+          return TOKEN_COMMA;
+        case '=':
+          return TOKEN_OPERATOR_ASSIGN;
+        case '+':
+          yylval.bin_op = BINOP_ADD;
+          return TOKEN_OPERATOR_PLUS;
+        case '-':
+          yylval.bin_op = BINOP_SUB;
+          return TOKEN_OPERATOR_MINUS;
+        case '*':
+          yylval.bin_op = BINOP_MUL;
+          return TOKEN_OPERATOR_MULTIPLY;
+        case '/':
+          yylval.bin_op = BINOP_DIV;
+          return TOKEN_OPERATOR_DIVIDE;
+        default:
+          fprintf(stderr, "Lexer: Unrecognized character '%c'\n", curr_char);
+          return TOKEN_EOF;
+        }
+      }
+      break;
+
+    case STATE_IDEN:
+      if (isalnum(curr_char) || curr_char == '_') {
+        current_pos++;
+      } else {
+        size_t len = current_pos - token_start;
+        char *identifier_str = strndup(token_start, len);
+        int type = check_keyword(identifier_str);
+        if (type == TOKEN_IDENTIFIER) {
+          yylval.str = identifier_str;
+        } else {
+          free(identifier_str);
+        }
+        return type;
+      }
+      break;
+
+    case STATE_INT_LIT:
+      if (isdigit(curr_char)) {
+        current_pos++;
+      } else if (curr_char == '.') {
+        state = STATE_FLOAT_LIT;
+        current_pos++;
+      } else {
+        size_t len = current_pos - token_start;
+        char *num = strndup(token_start, len);
+        yylval.str = num;
+        return TOKEN_INT_LIT;
+      }
+      break;
+    case STATE_FLOAT_LIT:
+      if (isdigit(curr_char)) {
+        current_pos++;
+      } else {
+        size_t len = current_pos - token_start;
+        char *dec = strndup(token_start, len);
+        yylval.str = dec;
+        return TOKEN_FLOAT_LIT;
+      }
+      break;
+    default:
+      fprintf(stderr, "Lexer: Invalid state\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  if (state == STATE_IDEN) {
+    size_t len = current_pos - token_start;
+    char *identifier_str = strndup(token_start, len);
+    int type = check_keyword(identifier_str);
+    if (type == TOKEN_IDENTIFIER) {
+      yylval.str = identifier_str;
+    } else {
+      free(identifier_str);
+    }
+    return type;
+  } else if (state == STATE_INT_LIT) {
+    size_t len = current_pos - token_start;
+    char *num = strndup(token_start, len);
+    yylval.str = num;
+    return TOKEN_INT_LIT;
+  } else if (state == STATE_FLOAT_LIT) {
+    size_t len = current_pos - token_start;
+    char *dec = strndup(token_start, len);
+    yylval.str = dec;
+    return TOKEN_FLOAT_LIT;
+  }
+
+  return TOKEN_EOF;
+}
+
+
+
+/*THIS FUNCTION IS FOR DEBUGGING PORPOSES*/
 Token *next_token(char *buffer) {
   if (buffer != NULL) {
     current_pos = buffer; // Initialize the buffer pointer on the first call
@@ -145,7 +289,7 @@ Token *next_token(char *buffer) {
         case ';':
           return create_token(TOKEN_SEMICOLON, token_start, 1);
         case ',':
-          return create_token(TOKEN_COMA, token_start, 1);
+          return create_token(TOKEN_COMMA, token_start, 1);
         case '=':
           return create_token(TOKEN_OPERATOR_ASSIGN, token_start, 1);
         case '+':
@@ -158,7 +302,7 @@ Token *next_token(char *buffer) {
           return create_token(TOKEN_OPERATOR_DIVIDE, token_start, 1);
         default:
           fprintf(stderr, "Lexer: Unrecognized character '%c'\n", curr_char);
-          return create_token(TOKEN_UNKNOWN, token_start, 1);
+          return create_token(TOKEN_EOF, token_start, 1);
         }
       }
       break;
@@ -169,7 +313,7 @@ Token *next_token(char *buffer) {
       } else {
         size_t len = current_pos - token_start;
         char *identifier_str = strndup(token_start, len);
-        TokenType type = check_keyword(identifier_str);
+        int type = check_keyword(identifier_str);
         free(identifier_str);
         return create_token(type, token_start, len);
       }
@@ -203,7 +347,7 @@ Token *next_token(char *buffer) {
   if (state == STATE_IDEN) {
     size_t len = current_pos - token_start;
     char *identifier_str = strndup(token_start, len);
-    TokenType type = check_keyword(identifier_str);
+    int type = check_keyword(identifier_str);
     free(identifier_str);
     return create_token(type, token_start, len);
   } else if (state == STATE_INT_LIT) {

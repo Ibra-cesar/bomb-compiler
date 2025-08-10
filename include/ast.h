@@ -128,6 +128,10 @@ struct AST {
       AST *expression; /* Can be NULL for void returns */
     } return_stmt;
 
+    struct{
+      AST *expression;
+    }expression_stmt;
+
     /* Binary operation */
     struct {
       BinaryOperator bin_op;
@@ -231,6 +235,30 @@ TypeInfo *ast_get_expression_type(AST *node); /* For type checking */
 /* Error Reporting */
 void ast_error(AST *node, const char *message, ...);
 void ast_warning(AST *node, const char *message, ...);
+
+/* Visitor Pattern */
+typedef struct ASTVisitor {
+    void (*visit_program)(AST *node, void *context);
+    void (*visit_function_decl)(AST *node, void *context);
+    void (*visit_param)(AST *node, void *context);
+    void (*visit_type)(AST *node, void *context);
+    void (*visit_block)(AST *node, void *context);
+    void (*visit_var_decl)(AST *node, void *context);
+    void (*visit_assignment)(AST *node, void *context);
+    void (*visit_return)(AST *node, void *context);
+    void (*visit_binary_op)(AST *node, void *context);
+    void (*visit_unary_op)(AST *node, void *context);
+    void (*visit_function_call)(AST *node, void *context);
+    void (*visit_identifier)(AST *node, void *context);
+    void (*visit_int_literal)(AST *node, void *context);
+    void (*visit_float_literal)(AST *node, void *context);
+    void (*pre_visit)(AST *node, void *context);   /* Called before specific visit */
+    void (*post_visit)(AST *node, void *context);  /* Called after specific visit */
+} ASTVisitor;
+
+void ast_accept(AST *node, ASTVisitor *visitor, void *context);
+void ast_list_accept(ASTList *list, ASTVisitor *visitor, void *context);
+
 
 /* Debugging Support */
 #ifdef DEBUG_AST
