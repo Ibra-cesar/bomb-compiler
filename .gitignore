@@ -2,3 +2,4 @@ bin
 .git
 obj
 Makefile
+.DS_Store
