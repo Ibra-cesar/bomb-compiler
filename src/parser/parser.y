@@ -39,7 +39,7 @@ AST *root;
 %token TOKEN_OP_EQ TOKEN_OP_NE TOKEN_OP_LT TOKEN_OP_GT TOKEN_OP_LE TOKEN_OP_GE /* Comparison Ops */
 %token TOKEN_PAREN_L TOKEN_PAREN_R TOKEN_BRACKET_L TOKEN_BRACKET_R
 %token TOKEN_COLON TOKEN_SEMICOLON TOKEN_COMMA
-%token TOKEN_EOF
+%token TOKEN_EOF 
 
 /* 
 * types for all non-terminal that produce a value and the union ty[pe.
@@ -60,19 +60,20 @@ AST *root;
 %right UMINUS /* For unary minus */
 
 /* starting of the grammar */
-%start Program
+%start Start
 
 %%
 
 /*********************************
  * Top-Level Rules
  *********************************/
+Start:
+    Program TOKEN_EOF { return 0; }
+    ;
 
 Program:
-    /* A program is a list of function declarations */
-    FunctionDeclList TOKEN_EOF { root = ast_program($1); }
-    | /* An empty program is also valid */
-    TOKEN_EOF { root = ast_program(NULL); }
+    FunctionDeclList { root = ast_program($1); }
+    | { root = ast_program(NULL); }
     ;
 
 FunctionDeclList:
@@ -249,6 +250,6 @@ ArgList:
 
 /* Error handling function */
 void yyerror(const char *s) {
-    fprintf(stderr, "Parse error: %s\n", s);
+    fprintf(stderr, "%s\n", s);
 }
 

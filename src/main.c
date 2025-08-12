@@ -10,6 +10,7 @@ extern AST *root;
 char *input_buff = NULL;
 extern int yyparse(void);
 extern int yylex(void);
+extern int yydebug;
 
 extern void lexer_reset(void);
 
@@ -24,8 +25,8 @@ int parse_file(char *path) {
   long file_size = ftell(bomb);
   rewind(bomb);
 
-  char *buff = (char *)malloc(file_size + 1);
-  buff[file_size] = '\0';
+  char *buff = (char *)malloc(file_size);
+
   if (buff == NULL) {
     fprintf(stderr, "Error Aloccating Memory");
     return EXIT_FAILURE;
@@ -48,21 +49,12 @@ int parse_file(char *path) {
 
   input_buff = buff;
 
-  lexer_reset();
+  yydebug = 1;
+  yyparse();
 
-  int result = yyparse();
-  printf("%d", result);
-
-  printf("=== TOKEN DEBUG ===\n");
-  int token_type;
-  do {
-    token_type = yylex();
-    printf("Token: %d (%s)\n", token_type, token_name(token_type));
-  } while (token_type != 0 && token_type != TOKEN_EOF);
-
-  printf("=== END TOKEN DEBUG ===\n");
-
+  printf("\nreaching EOF\n");
   free(buff);
+
   return EXIT_SUCCESS;
 }
 
@@ -74,11 +66,11 @@ int main(int argc, char *argv[]) {
 
   int result = parse_file(argv[1]);
   if (result != 0) {
-    fprintf(stderr, "ERROR PARSING FILE...%d", result);
+    fprintf(stderr, "ERROR PARSING FILE...   %d", result);
     return EXIT_FAILURE;
   }
 
-  ast_print(root, 0);
+  ast_print(root, 2);
 
   return EXIT_SUCCESS;
 }

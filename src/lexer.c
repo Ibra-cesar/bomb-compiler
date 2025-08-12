@@ -111,7 +111,7 @@ int yylex(void) {
   }
   // Check for end of file
   if (*current_pos == '\0') {
-    return TOKEN_EOF;
+   return TOKEN_EOF;
   }
 
   // Skip any whitespace
@@ -167,7 +167,7 @@ int yylex(void) {
           return TOKEN_OPERATOR_DIVIDE;
         default:
           fprintf(stderr, "Lexer: Unrecognized character '%c'\n", curr_char);
-          return TOKEN_EOF;
+          exit(EXIT_FAILURE);
         }
       }
       break;
